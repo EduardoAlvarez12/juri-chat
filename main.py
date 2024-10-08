@@ -89,14 +89,19 @@ try:
 
     # ====== Plantilla para responder prompts ======
     qa_prompt_tmpl_str = (
-    "Context information is below.\n"
+    "Información de contexto se encuentra a continuación.\n"
     "---------------------\n"
     "{context_str}\n"
     "---------------------\n"
-    "Given the context information above I want you to think step by step to answer the query in a crisp manner, make sure to scan the context thoroughly, in case case you don't know the answer say 'I don't know!'.\n"
-    "Query: {query_str}\n"
-    "Answer: "
+    "Dada la información de contexto anterior, por favor responde a la consulta de manera amable y conversacional. Asegúrate de entender que términos como 'Art', 'art' y 'artículo' se refieren al mismo concepto.\n"
+    "Ejemplo de equivalencias:\n"
+    "- 'Art' es igual a 'art'.\n"
+    "- 'Art' también se refiere a 'artículo' o 'Artículo'.\n"
+    "Si no sabes la respuesta, di '¡No lo sé!'.\n"
+    "Consulta: {query_str}\n"
+    "Respuesta: "
     )
+
     qa_prompt_tmpl = PromptTemplate(qa_prompt_tmpl_str)
 
     query_engine.update_prompts(
