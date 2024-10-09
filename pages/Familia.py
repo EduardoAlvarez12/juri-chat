@@ -4,6 +4,7 @@ import os
 import base64
 import gc
 import random
+import streamlit as st
 import tempfile
 import time
 import uuid
@@ -16,8 +17,6 @@ from llama_index.core import PromptTemplate
 from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 from llama_index.core import VectorStoreIndex, ServiceContext, SimpleDirectoryReader
 
-import streamlit as st
-
 if "id" not in st.session_state:
     st.session_state.id = uuid.uuid4()
     #st.session_state.file_cache = {}
@@ -25,9 +24,10 @@ if "id" not in st.session_state:
 session_id = st.session_state.id
 client = None
 
+def local_css(file_name):
+    with open(file_name) as f:
+        st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
 
-
-@st.cache_resource
 def load_llm():
     llm = Ollama(model="llama3.1", request_timeout=120.0)
     return llm
@@ -36,7 +36,6 @@ def reset_chat():
     st.session_state.messages = []
     st.session_state.context = None
     gc.collect()
-
 
 def display_pdf(file):
     st.markdown("### PDF Preview")
@@ -51,73 +50,82 @@ def display_pdf(file):
     # Mostrar el archivo
     st.markdown(pdf_display, unsafe_allow_html=True)
 
+# Cargar CSS
+local_css("./css/streamlit.css")
 
-with st.sidebar:
-    st.header(f"JurisChat")
+# Llamar directorios y extraer recursos
+input_dir_path = '/teamspace/studios/this_studio/document_db/familiar'
+main_body_logo = "./images/icon_logo.png"
+sidebar_logo = "./images/full_logo.png"
+st.logo(sidebar_logo, icon_image=main_body_logo)
+
+
+# Se procesan documentos
+try:    
+    loader = SimpleDirectoryReader(
+        input_dir = input_dir_path,
+        required_exts=[".pdf"],
+        recursive=True
+    )
+        
+    docs = loader.load_data()
+
+    # llamamos al llm y al modelo de embedding
+    llm=load_llm()
+    embed_model = HuggingFaceEmbedding( model_name="BAAI/bge-large-en-v1.5", trust_remote_code=True)
     
-    input_dir_path = '/teamspace/studios/this_studio/test-dir'
+    # Indexamos los documentos cargados
+    Settings.embed_model = embed_model
+    index = VectorStoreIndex.from_documents(docs, show_progress=True)
 
-    try:    
-        loader = SimpleDirectoryReader(
-            input_dir = input_dir_path,
-            required_exts=[".pdf"],
-            recursive=True
-        )
-           
-        docs = loader.load_data()
+    # Creamos el motor de consultar
+    Settings.llm = llm
+    query_engine = index.as_query_engine(streaming=True)
 
-        # llamamos al llm y al modelo de embedding
-        llm=load_llm()
-        embed_model = HuggingFaceEmbedding( model_name="BAAI/bge-large-en-v1.5", trust_remote_code=True)
+    # ====== Plantilla para responder prompts ======
+    qa_prompt_tmpl_str = (
+    "Información de contexto se encuentra a continuación.\n"
+    "---------------------\n"
+    "{context_str}\n"
+    "---------------------\n"
+    "Dada la información de contexto anterior, por favor responde a la consulta de manera amable y conversacional. Asegúrate de entender que términos como 'Art', 'art' y 'artículo' se refieren al mismo concepto.\n"
+    "Ejemplo de equivalencias:\n"
+    "- 'Art' es igual a 'art'.\n"
+    "- 'Art' también se refiere a 'artículo' o 'Artículo'.\n"
+    "Si no sabes la respuesta, di '¡No lo sé!'.\n"
+    "Consulta: {query_str}\n"
+    "Respuesta: "
+    )
+
+    qa_prompt_tmpl = PromptTemplate(qa_prompt_tmpl_str)
+
+    query_engine.update_prompts(
+        {"response_synthesizer:text_qa_template": qa_prompt_tmpl}
+    )
+    
+    # Cargar el resto de opciones
+    col1, col2 = st.columns([6, 1])
+    with col1:
+        st.header(f"Pregúntale a JuriChat!")
+    with col2:
+        st.button("Reiniciar ↺", on_click=reset_chat)
+
+    # Informar que el chat está listo
+    st.success("Chat Listo!")
+    # display_pdf(file)
         
-        # Indexamos los documentos cargados
-        Settings.embed_model = embed_model
-        index = VectorStoreIndex.from_documents(docs, show_progress=True)
-
-        # Creamos el motor de consultar
-        Settings.llm = llm
-        query_engine = index.as_query_engine(streaming=True)
-
-        # ====== Plantilla para responder prompts ======
-        qa_prompt_tmpl_str = (
-        "Context information is below.\n"
-        "---------------------\n"
-        "{context_str}\n"
-        "---------------------\n"
-        "Given the context information above I want you to think step by step to answer the query in a crisp manner, make sure to scan the context thoroughly, in case case you don't know the answer say 'I don't know!'.\n"
-        "Query: {query_str}\n"
-        "Answer: "
-        )
-        qa_prompt_tmpl = PromptTemplate(qa_prompt_tmpl_str)
-
-        query_engine.update_prompts(
-            {"response_synthesizer:text_qa_template": qa_prompt_tmpl}
-        )
-        
-        # Informar que el chat está listo
-        st.success("Chat Listo!")
-        # display_pdf(file)
-            
-    except Exception as e:
-        st.error(f"An error occurred: {e}")
-        st.stop()     
-
-col1, col2 = st.columns([6, 1])
-
-with col1:
-    st.header(f"JurisChat")
-
-with col2:
-    st.button("Reiniciar ↺", on_click=reset_chat)
+except Exception as e:
+    st.error(f"An error occurred: {e}")
+    st.stop()     
 
 # Se comienza el historial de mensajes
 if "messages" not in st.session_state:
     reset_chat()
 
 # Si hay un historial, mostrar mensajes de este en reinicio de la app
-for message in st.session_state.messages:
-    with st.chat_message(message["role"]):
-        st.markdown(message["content"])
+# for message in st.session_state.messages:
+#     with st.chat_message(message["role"]):
+#         st.markdown(message["content"])
 
 # Se acepta el input del usuario
 if prompt := st.chat_input("¿Qué me puedes decir sobre...?"):

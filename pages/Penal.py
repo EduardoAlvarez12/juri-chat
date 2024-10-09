@@ -24,7 +24,6 @@ if "id" not in st.session_state:
 session_id = st.session_state.id
 client = None
 
-@st.cache_resource
 def local_css(file_name):
     with open(file_name) as f:
         st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
@@ -55,14 +54,10 @@ def display_pdf(file):
 local_css("./css/streamlit.css")
 
 # Llamar directorios y extraer recursos
-input_dir_path = '/teamspace/studios/this_studio/document-bd'
+input_dir_path = '/teamspace/studios/this_studio/document_db/penal'
 main_body_logo = "./images/icon_logo.png"
 sidebar_logo = "./images/full_logo.png"
 st.logo(sidebar_logo, icon_image=main_body_logo)
-
-# Comienza sidebar
-with st.sidebar:
-    st.header(f"Menú")
 
 
 # Se procesan documentos
@@ -128,9 +123,9 @@ if "messages" not in st.session_state:
     reset_chat()
 
 # Si hay un historial, mostrar mensajes de este en reinicio de la app
-for message in st.session_state.messages:
-    with st.chat_message(message["role"]):
-        st.markdown(message["content"])
+# for message in st.session_state.messages:
+#     with st.chat_message(message["role"]):
+#         st.markdown(message["content"])
 
 # Se acepta el input del usuario
 if prompt := st.chat_input("¿Qué me puedes decir sobre...?"):
