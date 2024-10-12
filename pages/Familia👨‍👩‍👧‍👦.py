@@ -106,9 +106,21 @@ try:
     # Cargar el resto de opciones
     col1, col2 = st.columns([6, 1])
     with col1:
-        st.header(f"Pregúntale a JuriChat!")
+        st.header(f"Pregúntale a JuriChat - Sección Familia 👨‍👩‍👧‍👦")
     with col2:
         st.button("Reiniciar ↺", on_click=reset_chat)
+
+
+    st.markdown(
+        """
+        En este módulo podras facilitar el acceso y comprensión de documentos relacionados 
+        con la legislación familiar, como el Código de Familia, Ley Procesal y otras normativas 
+        que protegen los derechos y deberes en el ámbito familiar. Realiza consultas rápidas y 
+        encuentra explicaciones claras sobre leyes que regulan temas como el matrimonio, la 
+        tutela, la patria potestad, y más ​💙​🦾​.        
+
+        """
+    )
 
     # Informar que el chat está listo
     st.success("Chat Listo!")

@@ -106,9 +106,20 @@ try:
     # Cargar el resto de opciones
     col1, col2 = st.columns([6, 1])
     with col1:
-        st.header(f"Pregúntale a JuriChat!")
+        st.header(f"Pregúntale a JuriChat - Sección Penal ⚖️")
     with col2:
         st.button("Reiniciar ↺", on_click=reset_chat)
+
+    st.markdown(
+        """
+        En este módulo podras facilitar el acceso y comprensión de documentos relacionados 
+        con la legislación penal, como el Código Penal, Código Procesal y otras normativas 
+        que protegen los derechos y deberes en el ámbito penal. Realiza consultas rápidas y 
+        encuentra explicaciones claras sobre leyes que regulan temas como resolución de delitos, sanción de conductas
+        , seguridad nacional, y más ​💙​🦾​.        
+
+        """
+    )
 
     # Informar que el chat está listo
     st.success("Chat Listo!")
